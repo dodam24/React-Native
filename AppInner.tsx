@@ -16,6 +16,7 @@ import userSlice from './src/slices/user';
 import axios, {AxiosError} from 'axios';
 import Config from 'react-native-config';
 import {Alert} from 'react-native';
+import orderSlice from './src/slices/order';
 
 // 로그인 되어 있을 때
 export type LoggedInParamList = {
@@ -46,6 +47,7 @@ function AppInner() {
   useEffect(() => {
     const callback = (data: any) => {
       console.log(data);
+      dispatch(orderSlice.actions.addOrder(data));
     };
     if (socket && isLoggedIn) {
       socket.emit('acceptOrder', 'hello'); // 서버에 데이터를 전송
@@ -56,7 +58,7 @@ function AppInner() {
         socket.off('order', callback);
       }
     };
-  }, [isLoggedin, socket]);
+  }, [dispatch, isLoggedin, socket]);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -95,6 +97,8 @@ function AppInner() {
         if ((error as AxiosError).response?.data.code === 'expired') {
           Alert.alert('알림', '다시 로그인 해주세요.');
         }
+      } finally {
+        // 스플래시 스크린 없애기
       }
     };
     getTokenAndRefresh();
