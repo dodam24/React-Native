@@ -66,11 +66,11 @@ function Settings() {
       </View>
       <View style={styles.buttonZone}>
         <Pressable
+          // style={[styles.loginButton, styles.loginButtonActive]}
           style={StyleSheet.compose(
             styles.loginButton,
             styles.loginButtonActive,
           )}
-          // style={[styles.loginButton, styles.loginButtonActive]}
           onPress={onLogout}>
           <Text style={styles.loginButtonText}>로그아웃</Text>
         </Pressable>

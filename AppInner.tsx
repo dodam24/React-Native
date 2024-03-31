@@ -40,6 +40,37 @@ function AppInner() {
   const isLoggedIn = useSelector((state: RootState) => !!state.user.email);
   const [socket, disconnect] = useSocket();
 
+  // Axios Interceptor
+  useEffect(() => {
+    axios.interceptors.response.use(
+      response => response,
+      async error => {
+        const {
+          config,
+          response: {status},
+        } = error; // error.response.status
+        if (status === 419) {
+          // accessToken이 만료되면 자동으로 갱신
+          if (error.response.data.code === 'expired') {
+            const originalRequest = config;
+            const refreshToken = await EncryptedStorage.getItem('refreshToken');
+            // toekn refresh 요청
+            const {data} = await axios.post(
+              `${Config.API_URL}/refreshToken`, // token refresh api
+              {},
+              {headers: {authorization: `Bearer ${refreshToken}`}},
+            );
+            // 새로운 토큰 저장
+            dispatch(userSlice.actions.setAccessToken(data.data.accessToken));
+            originalRequest.headers.authorization = `Bearer ${data.data.accessToken}`;
+            return axios(originalRequest);
+          }
+        }
+        return Promise.reject(error); // 419 에러가 아닌 경우 (ex: 타인이 이미 수락한 경우)
+      },
+    );
+  }, []);
+
   // 키, 값
   // 'userInfo', { name: 'zerocho', birth: 1994 }
   // 'order', { orderId: '1312s', price: 9000, latitude: 37.5, longitude: 127.5 }

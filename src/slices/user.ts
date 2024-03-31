@@ -1,4 +1,4 @@
-import {createSlice} from '@reduxjs/toolkit';
+import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 
 // state -> root reducer(state) -> user slice, order slice
 // state.user
@@ -31,8 +31,11 @@ const userSlice = createSlice({
     setEmail(state, action) {
       state.email = action.payload;
     },
-    setMoney(state, action) {
+    setMoney(state, action: PayloadAction<number>) {
       state.money = action.payload;
+    },
+    setAccessToken(state, action) {
+      state.accessToken = action.payload;
     },
   },
   extraReducers: builder => {}, // 비동기 action
