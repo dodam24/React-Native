@@ -17,6 +17,7 @@ import axios, {AxiosError} from 'axios';
 import Config from 'react-native-config';
 import {Alert} from 'react-native';
 import orderSlice from './src/slices/order';
+import usePermissions from './src/hooks/usePermissions';
 
 // 로그인 되어 있을 때
 export type LoggedInParamList = {
@@ -39,6 +40,8 @@ function AppInner() {
   const dispatch = useAppDispatch();
   const isLoggedIn = useSelector((state: RootState) => !!state.user.email);
   const [socket, disconnect] = useSocket();
+
+  usePermissions();
 
   // Axios Interceptor 설정
   useEffect(() => {
