@@ -1,5 +1,5 @@
 # Mobile App Development with React Native
-
+<!--
 - React Native
 - React Navigation
 - Token Authentication
@@ -9,3 +9,4 @@
 - Push Notification
 - Code Push
 - App build and release
+-->
