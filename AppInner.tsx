@@ -40,7 +40,7 @@ function AppInner() {
   const isLoggedIn = useSelector((state: RootState) => !!state.user.email);
   const [socket, disconnect] = useSocket();
 
-  // Axios Interceptor
+  // Axios Interceptor 설정
   useEffect(() => {
     axios.interceptors.response.use(
       response => response,
@@ -63,6 +63,7 @@ function AppInner() {
             // 새로운 토큰 저장
             dispatch(userSlice.actions.setAccessToken(data.data.accessToken));
             originalRequest.headers.authorization = `Bearer ${data.data.accessToken}`;
+            // 419 에러로 실패했던 요청을 새로운 토큰으로 재요청
             return axios(originalRequest);
           }
         }

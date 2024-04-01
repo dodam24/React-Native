@@ -1,35 +1,43 @@
+import {
+  Alert,
+  Dimensions,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import React, {useCallback, useState} from 'react';
-import {Alert, Pressable, StyleSheet, Text, View} from 'react-native';
 import orderSlice, {Order} from '../slices/order';
 import {useAppDispatch} from '../store';
+import getDistanceFromLatLonInKm from '../util';
 import axios, {AxiosError} from 'axios';
-import Config from 'react-native-config';
 import {useSelector} from 'react-redux';
 import {RootState} from '../store/reducer';
+import Config from 'react-native-config';
 import {NavigationProp, useNavigation} from '@react-navigation/native';
 import {LoggedInParamList} from '../../AppInner';
-import EncryptedStorage from 'react-native-encrypted-storage/lib/typescript/EncryptedStorage';
+import NaverMapView, {Marker, Path} from 'react-native-nmap';
 
-function EachOrder({item}: {item: Order}) {
-  const dispatch = useAppDispatch();
+interface Props {
+  item: Order;
+}
+function EachOrder({item}: Props) {
   const navigation = useNavigation<NavigationProp<LoggedInParamList>>();
-  const [loading, setLoading] = useState(false);
-  const [detail, setDetail] = useState(false);
+  const dispatch = useAppDispatch();
   const accessToken = useSelector((state: RootState) => state.user.accessToken);
-  const toggleDetail = useCallback(() => {
-    setDetail(prev => !prev);
-  }, []);
+  const [detail, showDetail] = useState(false);
 
   const onAccept = useCallback(async () => {
+    if (!accessToken) {
+      return;
+    }
     try {
-      setLoading(false);
       await axios.post(
-        `${Config.API_URL}/accept`, // url
-        {orderId: item.orderId}, // data
-        {headers: {authorization: `Bearer ${accessToken}`}}, // config
+        `${Config.API_URL}/accept`,
+        {orderId: item.orderId},
+        {headers: {authorization: `Bearer ${accessToken}`}},
       );
       dispatch(orderSlice.actions.acceptOrder(item.orderId));
-      setLoading(true);
       navigation.navigate('Delivery');
     } catch (error) {
       let errorResponse = (error as AxiosError).response;
@@ -38,45 +46,82 @@ function EachOrder({item}: {item: Order}) {
         Alert.alert('알림', errorResponse.data.message);
         dispatch(orderSlice.actions.rejectOrder(item.orderId));
       }
-      setLoading(true);
     }
-    dispatch(orderSlice.actions.acceptOrder(item.orderId));
-  }, [accessToken, navigation, dispatch, item.orderId]);
+  }, [navigation, dispatch, item, accessToken]);
 
   const onReject = useCallback(() => {
     dispatch(orderSlice.actions.rejectOrder(item.orderId));
-  }, [dispatch, item.orderId]);
+  }, [dispatch, item]);
+  const {start, end} = item;
+
+  const toggleDetail = useCallback(() => {
+    showDetail(prevState => !prevState);
+  }, []);
 
   return (
-    <View key={item.orderId} style={styles.orderContainer}>
+    <View style={styles.orderContainer}>
       <Pressable onPress={toggleDetail} style={styles.info}>
         <Text style={styles.eachInfo}>
           {item.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}원
         </Text>
-        <Text>삼성동</Text>
-        <Text>왕십리동</Text>
+        <Text style={styles.eachInfo}>
+          {getDistanceFromLatLonInKm(
+            start.latitude,
+            start.longitude,
+            end.latitude,
+            end.longitude,
+          ).toFixed(1)}
+          km
+        </Text>
       </Pressable>
-      {detail ? (
+      {detail && (
         <View>
-          <View>
-            <Text>네이버맵이 들어갈 장소</Text>
+          <View
+            style={{
+              width: Dimensions.get('window').width - 30,
+              height: 200,
+              marginTop: 10,
+            }}>
+            <NaverMapView
+              style={{width: '100%', height: '100%'}}
+              zoomControl={false}
+              center={{
+                zoom: 10,
+                tilt: 50,
+                latitude: (start.latitude + end.latitude) / 2,
+                longitude: (start.longitude + end.longitude) / 2,
+              }}>
+              <Marker
+                coordinate={{
+                  latitude: start.latitude,
+                  longitude: start.longitude,
+                }}
+                pinColor="blue"
+              />
+              <Path
+                coordinates={[
+                  {
+                    latitude: start.latitude,
+                    longitude: start.longitude,
+                  },
+                  {latitude: end.latitude, longitude: end.longitude},
+                ]}
+              />
+              <Marker
+                coordinate={{latitude: end.latitude, longitude: end.longitude}}
+              />
+            </NaverMapView>
           </View>
           <View style={styles.buttonWrapper}>
-            <Pressable
-              onPress={onAccept}
-              disabled={loading}
-              style={styles.acceptButton}>
+            <Pressable onPress={onAccept} style={styles.acceptButton}>
               <Text style={styles.buttonText}>수락</Text>
             </Pressable>
-            <Pressable
-              onPress={onReject}
-              disabled={loading}
-              style={styles.rejectButton}>
+            <Pressable onPress={onReject} style={styles.rejectButton}>
               <Text style={styles.buttonText}>거절</Text>
             </Pressable>
           </View>
         </View>
-      ) : null}
+      )}
     </View>
   );
 }
@@ -90,9 +135,10 @@ const styles = StyleSheet.create({
   },
   info: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
   },
-  eachInfo: {},
+  eachInfo: {
+    flex: 1,
+  },
   buttonWrapper: {
     flexDirection: 'row',
   },
