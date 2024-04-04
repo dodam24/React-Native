@@ -1,4 +1,3 @@
-// 위도, 경도를 km로 바꿔주는 함수
 function getDistanceFromLatLonInKm(
   lat1: number,
   lon1: number,

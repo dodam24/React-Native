@@ -1,19 +1,18 @@
 import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import Ing from './Ing';
 import Complete from './Complete';
+import Ing from './Ing';
 
 const Stack = createNativeStackNavigator();
 
 function Delivery() {
   return (
-    // Complete(완료) 화면을 Ing(지도) 화면 위에 Stack 형태로 쌓음 (지도는 로딩 시간이 길기 때문에 메모리 최적화를 위함)
-    <Stack.Navigator initialRouteName="Ing">
-      <Stack.Screen name="ing" component={Ing} options={{headerShown: false}} />
+    <Stack.Navigator>
+      <Stack.Screen name="Ing" component={Ing} options={{title: '내 오더'}} />
       <Stack.Screen
         name="Complete"
         component={Complete}
-        options={{headerShown: false}}
+        options={{title: '완료하기'}}
       />
     </Stack.Navigator>
   );

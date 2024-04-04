@@ -1,114 +1,57 @@
-import * as React from 'react';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import Settings from './src/pages/Settings';
-import Orders from './src/pages/Orders';
-import Delivery from './src/pages/Delivery';
+import messaging from '@react-native-firebase/messaging';
 import SignIn from './src/pages/SignIn';
 import SignUp from './src/pages/SignUp';
+import Orders from './src/pages/Orders';
+import Delivery from './src/pages/Delivery';
+import Settings from './src/pages/Settings';
+import * as React from 'react';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {useSelector} from 'react-redux';
 import {RootState} from './src/store/reducer';
 import useSocket from './src/hooks/useSocket';
 import {useEffect} from 'react';
-import {useAppDispatch} from './src/store';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import userSlice from './src/slices/user';
 import axios, {AxiosError} from 'axios';
-import Config from 'react-native-config';
 import {Alert} from 'react-native';
+import userSlice from './src/slices/user';
+import {useAppDispatch} from './src/store';
+import Config from 'react-native-config';
 import orderSlice from './src/slices/order';
 import usePermissions from './src/hooks/usePermissions';
+import SplashScreen from 'react-native-splash-screen';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
-// 로그인 되어 있을 때
 export type LoggedInParamList = {
   Orders: undefined;
   Settings: undefined;
   Delivery: undefined;
   Complete: {orderId: string};
 };
-
-// 로그인 안 되어 있을 때
 export type RootStackParamList = {
   SignIn: undefined;
   SignUp: undefined;
 };
 
 const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function AppInner() {
   const dispatch = useAppDispatch();
   const isLoggedIn = useSelector((state: RootState) => !!state.user.email);
+
   const [socket, disconnect] = useSocket();
 
   usePermissions();
 
-  // Axios Interceptor 설정
+  // 앱 실행 시 토큰 있으면 로그인하는 코드
   useEffect(() => {
-    axios.interceptors.response.use(
-      response => response,
-      async error => {
-        const {
-          config,
-          response: {status},
-        } = error; // error.response.status
-        if (status === 419) {
-          // accessToken이 만료되면 자동으로 갱신
-          if (error.response.data.code === 'expired') {
-            const originalRequest = config;
-            const refreshToken = await EncryptedStorage.getItem('refreshToken');
-            // toekn refresh 요청
-            const {data} = await axios.post(
-              `${Config.API_URL}/refreshToken`, // token refresh api
-              {},
-              {headers: {authorization: `Bearer ${refreshToken}`}},
-            );
-            // 새로운 토큰 저장
-            dispatch(userSlice.actions.setAccessToken(data.data.accessToken));
-            originalRequest.headers.authorization = `Bearer ${data.data.accessToken}`;
-            // 419 에러로 실패했던 요청을 새로운 토큰으로 재요청
-            return axios(originalRequest);
-          }
-        }
-        return Promise.reject(error); // 419 에러가 아닌 경우 (ex: 타인이 이미 수락한 경우)
-      },
-    );
-  }, []);
-
-  // 키, 값
-  // 'userInfo', { name: 'zerocho', birth: 1994 }
-  // 'order', { orderId: '1312s', price: 9000, latitude: 37.5, longitude: 127.5 }
-
-  useEffect(() => {
-    const callback = (data: any) => {
-      console.log(data);
-      dispatch(orderSlice.actions.addOrder(data));
-    };
-    if (socket && isLoggedIn) {
-      socket.emit('acceptOrder', 'hello'); // 서버에 데이터를 전송
-      socket.on('order', callback); // 서버로부터 데이터를 받음
-    }
-    return () => {
-      if (socket) {
-        socket.off('order', callback);
-      }
-    };
-  }, [dispatch, isLoggedin, socket]);
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      console.log('!isLoggedIn', !isLoggedIn);
-      disconnect();
-    }
-  }, [isLoggedIn, disconnect]);
-
-  // 앱 실행 시 토큰이 있으면 로그인하는 코드
-  useEffect(() => {
-    // useEffect 내에서 async/await 사용 X -> 내부에 별도의 함수를 정의하고 즉시 호출하는 방식으로 사용
     const getTokenAndRefresh = async () => {
       try {
         const token = await EncryptedStorage.getItem('refreshToken');
         if (!token) {
+          SplashScreen.hide();
           return;
         }
         const response = await axios.post(
@@ -133,10 +76,83 @@ function AppInner() {
           Alert.alert('알림', '다시 로그인 해주세요.');
         }
       } finally {
-        // 스플래시 스크린 없애기
+        SplashScreen.hide();
       }
     };
     getTokenAndRefresh();
+  }, [dispatch]);
+
+  useEffect(() => {
+    const callback = (data: any) => {
+      console.log(data);
+      dispatch(orderSlice.actions.addOrder(data));
+    };
+    if (socket && isLoggedIn) {
+      socket.emit('acceptOrder', 'hello');
+      socket.on('order', callback);
+    }
+    return () => {
+      if (socket) {
+        socket.off('order', callback);
+      }
+    };
+  }, [dispatch, isLoggedIn, socket]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      console.log('!isLoggedIn', !isLoggedIn);
+      disconnect();
+    }
+  }, [isLoggedIn, disconnect]);
+
+  useEffect(() => {
+    axios.interceptors.response.use(
+      response => {
+        return response;
+      },
+      async error => {
+        const {
+          config,
+          response: {status},
+        } = error;
+        if (status === 419) {
+          if (error.response.data.code === 'expired') {
+            const originalRequest = config;
+            const refreshToken = await EncryptedStorage.getItem('refreshToken');
+            // token refresh 요청
+            const {data} = await axios.post(
+              `${Config.API_URL}/refreshToken`, // token refresh api
+              {},
+              {headers: {authorization: `Bearer ${refreshToken}`}},
+            );
+            // 새로운 토큰 저장
+            dispatch(userSlice.actions.setAccessToken(data.data.accessToken));
+            originalRequest.headers.authorization = `Bearer ${data.data.accessToken}`;
+            // 419로 요청 실패했던 요청 새로운 토큰으로 재요청
+            return axios(originalRequest);
+          }
+        }
+        return Promise.reject(error);
+      },
+    );
+  }, [dispatch]);
+
+  // 토큰 설정
+  useEffect(() => {
+    async function getToken() {
+      try {
+        if (!messaging().isDeviceRegisteredForRemoteMessages) {
+          await messaging().registerDeviceForRemoteMessages();
+        }
+        const token = await messaging().getToken();
+        console.log('phone token', token);
+        dispatch(userSlice.actions.setPhoneToken(token));
+        return axios.post(`${Config.API_URL}/phonetoken`, {token});
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    getToken();
   }, [dispatch]);
 
   return isLoggedIn ? (
@@ -144,17 +160,37 @@ function AppInner() {
       <Tab.Screen
         name="Orders"
         component={Orders}
-        options={{title: '오더 목록'}}
+        options={{
+          title: '오더 목록',
+          tabBarIcon: ({color}) => (
+            <FontAwesome5 name="list" size={20} style={{color}} />
+          ),
+          tabBarActiveTintColor: 'blue',
+        }}
       />
       <Tab.Screen
         name="Delivery"
         component={Delivery}
-        options={{headerShown: false}}
+        options={{
+          headerShown: false,
+          title: '지도',
+          tabBarIcon: ({color}) => (
+            <FontAwesome5 name="map" size={20} style={{color}} />
+          ),
+          tabBarActiveTintColor: 'blue',
+        }}
       />
       <Tab.Screen
         name="Settings"
         component={Settings}
-        options={{title: '내 정보'}}
+        options={{
+          title: '내 정보',
+          tabBarIcon: ({color}) => (
+            <FontAwesome name="gear" size={20} style={{color}} />
+          ),
+          tabBarActiveTintColor: 'blue',
+          unmountOnBlur: true,
+        }}
       />
     </Tab.Navigator>
   ) : (

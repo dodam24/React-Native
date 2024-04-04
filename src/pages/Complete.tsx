@@ -3,7 +3,6 @@ import {
   Alert,
   Dimensions,
   Image,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -34,22 +33,18 @@ function Complete() {
   const [preview, setPreview] = useState<{uri: string}>();
   const accessToken = useSelector((state: RootState) => state.user.accessToken);
 
-  // { uri: '경로', filename: '파일 이름', type: '확장자' } 형태로 파일을 생성해서
-  // multipart/form-data를 통해서 파일 업로드
-
   const onResponse = useCallback(async response => {
-    // console.log(response.width, response.height, response.exif);
-    setPreview({uri: `data:${response.mime};base64,${response.data}`}); // {uri: 주소} (이미지를 base64라는 텍스트로 변환)
+    console.log(response.width, response.height, response.exif);
+    setPreview({uri: `data:${response.mime};base64,${response.data}`});
     const orientation = (response.exif as any)?.Orientation;
     console.log('orientation', orientation);
-    // Image Resizing (이미지 용량 줄이기)
     return ImageResizer.createResizedImage(
-      response.path, // 파일의 경로
-      600, // width
-      600, // height
-      response.mime.includes('jpeg') ? 'JPEG' : 'PNG', // format
-      100, // quality
-      0, // rotation
+      response.path,
+      600,
+      600,
+      response.mime.includes('jpeg') ? 'JPEG' : 'PNG',
+      100,
+      0,
     ).then(r => {
       console.log(r.uri, r.name);
 
@@ -64,7 +59,8 @@ function Complete() {
   const onTakePhoto = useCallback(() => {
     return ImagePicker.openCamera({
       includeBase64: true,
-      includeExif: true, // 카메라 촬영 위치(방향)에 따른 숫자 표시
+      includeExif: true,
+      saveToPhotos: true,
     })
       .then(onResponse)
       .catch(console.log);
@@ -90,17 +86,9 @@ function Complete() {
       Alert.alert('알림', '유효하지 않은 주문입니다.');
       return;
     }
-    const formData = new FormData(); // FormData를 통해서 이미지 업로드
+    const formData = new FormData();
+    formData.append('image', image);
     formData.append('orderId', orderId);
-    formData.append('image', {
-      name: image.name,
-      type: image.type || 'image/jpeg',
-      uri:
-        Platform.OS === 'android'
-          ? image.uri
-          : image.uri.replace('file://', ''),
-    });
-    console.log(formData.getParts());
     try {
       await axios.post(`${Config.API_URL}/complete`, formData, {
         headers: {
@@ -122,7 +110,7 @@ function Complete() {
   return (
     <View>
       <View style={styles.orderId}>
-        <Text>주문번호: {orderId}</Text>
+        <Text style={{color: 'black'}}>주문번호: {orderId}</Text>
       </View>
       <View style={styles.preview}>
         {preview && <Image style={styles.previewImage} source={preview} />}

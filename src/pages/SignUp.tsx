@@ -10,10 +10,10 @@ import {
   View,
 } from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {RootStackParamList} from '../../AppInner';
 import DismissKeyboardView from '../components/DismissKeyboardView';
 import axios, {AxiosError} from 'axios';
 import Config from 'react-native-config';
+import {RootStackParamList} from '../../AppInner';
 
 type SignUpScreenProps = NativeStackScreenProps<RootStackParamList, 'SignUp'>;
 
@@ -64,26 +64,24 @@ function SignUp({navigation}: SignUpScreenProps) {
     console.log(email, name, password);
     try {
       setLoading(true);
-      console.log(Config.API_URL);
-      // http 메서드: get, put, patch, post, delete, head, options
       const response = await axios.post(`${Config.API_URL}/user`, {
         email,
         name,
-        password, // hash화, 일방향 암호화
+        password,
       });
-      console.log(response);
+      console.log(response.data);
       Alert.alert('알림', '회원가입 되었습니다.');
       navigation.navigate('SignIn');
     } catch (error) {
-      const errorResponse = (error as AxiosError).response; // 네트워크(Axios) 에러일 때만 .respoonse
-      console.error();
+      const errorResponse = (error as AxiosError).response;
+      console.error(errorResponse);
       if (errorResponse) {
         Alert.alert('알림', errorResponse.data.message);
       }
     } finally {
       setLoading(false);
     }
-  }, [navigation, loading, email, name, password]);
+  }, [loading, navigation, email, name, password]);
 
   const canGoNext = email && name && password;
   return (
@@ -161,6 +159,7 @@ const styles = StyleSheet.create({
   textInput: {
     padding: 5,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    color: 'black',
   },
   inputWrapper: {
     padding: 20,
@@ -169,6 +168,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
     marginBottom: 20,
+    color: 'black',
   },
   buttonZone: {
     alignItems: 'center',

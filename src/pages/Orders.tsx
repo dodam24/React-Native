@@ -1,8 +1,8 @@
 import React, {useCallback} from 'react';
-import {FlatList} from 'react-native';
+import {FlatList, View} from 'react-native';
+import {Order} from '../slices/order';
 import {useSelector} from 'react-redux';
 import {RootState} from '../store/reducer';
-import {Order} from '../slices/order';
 import EachOrder from '../components/EachOrder';
 
 function Orders() {
@@ -12,11 +12,13 @@ function Orders() {
   }, []);
 
   return (
-    <FlatList
-      data={orders}
-      keyExtractor={item => item.orderId}
-      renderItem={renderItem}
-    />
+    <View>
+      <FlatList
+        data={orders}
+        keyExtractor={item => item.orderId}
+        renderItem={renderItem}
+      />
+    </View>
   );
 }
 

@@ -1,12 +1,12 @@
 import React, {useCallback, useRef, useState} from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
-  ActivityIndicator,
 } from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -55,7 +55,8 @@ function SignIn({navigation}: SignInScreenProps) {
         userSlice.actions.setUser({
           name: response.data.data.name,
           email: response.data.data.email,
-          accessToken: response.data.data.accessToken, // accessToken과 refreshToken 분리
+          accessToken: response.data.data.accessToken,
+          refreshToken: response.data.data.refreshToken,
         }),
       );
       await EncryptedStorage.setItem(
@@ -122,7 +123,7 @@ function SignIn({navigation}: SignInScreenProps) {
               ? StyleSheet.compose(styles.loginButton, styles.loginButtonActive)
               : styles.loginButton
           }
-          disabled={!canGoNext || loading}
+          disabled={!canGoNext}
           onPress={onSubmit}>
           {loading ? (
             <ActivityIndicator color="white" />
@@ -131,7 +132,7 @@ function SignIn({navigation}: SignInScreenProps) {
           )}
         </Pressable>
         <Pressable onPress={toSignUp}>
-          <Text>회원가입하기</Text>
+          <Text style={{color: 'black'}}>회원가입하기</Text>
         </Pressable>
       </View>
     </DismissKeyboardView>
@@ -142,6 +143,7 @@ const styles = StyleSheet.create({
   textInput: {
     padding: 5,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    color: 'black',
   },
   inputWrapper: {
     padding: 20,
@@ -150,6 +152,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
     marginBottom: 20,
+    color: 'black',
   },
   buttonZone: {
     alignItems: 'center',

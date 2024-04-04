@@ -1,4 +1,5 @@
-import {combineReducers} from '@reduxjs/toolkit';
+import {combineReducers} from 'redux';
+
 import userSlice from '../slices/user';
 import orderSlice from '../slices/order';
 
