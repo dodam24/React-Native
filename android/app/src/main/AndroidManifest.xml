@@ -50,7 +50,4 @@
         </intent-filter>
       </activity>
     </application>
-    <queries>
-        <package android:name="com.skt.tmap.ku" />
-    </queries>
 </manifest>
