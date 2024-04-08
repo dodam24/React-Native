@@ -45,7 +45,7 @@ function AppInner() {
 
   usePermissions();
 
-  // 앱 실행 시 토큰 있으면 로그인하는 코드
+  // 앱 실행 시 토큰이 있으면 로그인하는 코드
   useEffect(() => {
     const getTokenAndRefresh = async () => {
       try {
@@ -128,7 +128,7 @@ function AppInner() {
             // 새로운 토큰 저장
             dispatch(userSlice.actions.setAccessToken(data.data.accessToken));
             originalRequest.headers.authorization = `Bearer ${data.data.accessToken}`;
-            // 419로 요청 실패했던 요청 새로운 토큰으로 재요청
+            // 419로 요청 실패했던 요청을 새로운 토큰으로 재요청
             return axios(originalRequest);
           }
         }
