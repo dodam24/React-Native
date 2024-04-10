@@ -40,7 +40,7 @@ function Settings() {
 
   useEffect(() => {
     async function getCompletes() {
-      const response = await axios.get<{data: number}>(
+      const response = await axios.get<{data: Order[]}>(
         `${Config.API_URL}/completes`,
         {
           headers: {authorization: `Bearer ${accessToken}`},

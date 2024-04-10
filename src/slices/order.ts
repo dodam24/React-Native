@@ -11,7 +11,8 @@ export interface Order {
     longitude: number;
   };
   price: number;
-  image: string;
+  image: string; // 서버 경로
+  rider?: string;
   completedAt: string;
 }
 interface InitialState {
