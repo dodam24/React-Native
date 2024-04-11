@@ -11,9 +11,9 @@ export interface Order {
     longitude: number;
   };
   price: number;
-  image: string; // 서버 경로
+  image?: string; // 서버 경로
   rider?: string;
-  completedAt: string;
+  completedAt?: string;
 }
 interface InitialState {
   orders: Order[];
